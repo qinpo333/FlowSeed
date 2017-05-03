@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="schedulerFactory" lazy-init="false" autowire="no"
+        class="org.springframework.scheduling.quartz.SchedulerFactoryBean">  
+        <property name="triggers">  
+            <list>  
+                <ref bean="checkWaterJobTrigger"/>
+            </list>  
+        </property>  
+        <property name="applicationContextSchedulerContextKey" value="applicationContext" />  
+        <property name="configLocation" value="classpath:quartz.properties" />  
+    </bean>  
+
+    <!-- -->
+    <bean id="checkWaterJob" class="com.cmcc.seed.quartz.jobs.CheckWaterJob"/>
+
+    <bean id="checkWaterJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass">
+            <value>com.cmcc.seed.quartz.MyDetailQuartzJobBean
+            </value>
+        </property>
+        <property name="jobDataAsMap">
+            <map>
+                <entry key="targetObject" value="checkWaterJob" />
+                <entry key="targetMethod" value="execute" />
+            </map>
+        </property>
+
+        <property name="durability" value="true" />
+    </bean>
+
+
+    <bean id="checkWaterJobTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail">
+            <ref bean="checkWaterJobDetail" />
+        </property>
+        <property name="cronExpression">
+            <value>0 0 0 * * ?</value>
+        </property>
+    </bean>
+
+</beans>

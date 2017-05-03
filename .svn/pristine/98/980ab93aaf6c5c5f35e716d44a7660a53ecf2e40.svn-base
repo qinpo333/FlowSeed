@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cmcc.seed.dao.UserMapper">
+  <resultMap id="BaseResultMap" type="com.cmcc.seed.model.User">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="open_id" jdbcType="VARCHAR" property="openId" />
+    <result column="nickname" jdbcType="VARCHAR" property="nickname" />
+    <result column="img_url" jdbcType="VARCHAR" property="imgUrl" />
+    <result column="mobile" jdbcType="VARCHAR" property="mobile" />
+    <result column="level" jdbcType="INTEGER" property="level" />
+    <result column="experience" jdbcType="INTEGER" property="experience" />
+    <result column="money" jdbcType="INTEGER" property="money" />
+    <result column="flow" jdbcType="DOUBLE" property="flow" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, open_id, nickname, img_url, mobile, level, experience, money, flow, create_time, update_time
+  </sql>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from user
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByOpenId" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from user
+    where open_id = #{openId,jdbcType=VARCHAR}
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from user
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="com.cmcc.seed.model.User" useGeneratedKeys="true" keyProperty="id">
+    insert into user (id, open_id, nickname, 
+      img_url, mobile, level, 
+      experience, money, flow, create_time,
+      update_time)
+    values (#{id,jdbcType=BIGINT}, #{openId,jdbcType=VARCHAR}, #{nickname,jdbcType=VARCHAR},
+      #{imgUrl,jdbcType=VARCHAR}, #{mobile,jdbcType=VARCHAR}, #{level,jdbcType=INTEGER},
+      #{experience,jdbcType=INTEGER}, #{money,jdbcType=INTEGER}, #{flow,jdbcType=DOUBLE},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+
+  <insert id="insertSelective" parameterType="com.cmcc.seed.model.User">
+    insert into user
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="openId != null">
+        open_id,
+      </if>
+      <if test="nickname != null">
+        nickname,
+      </if>
+      <if test="imgUrl != null">
+        img_url,
+      </if>
+      <if test="mobile != null">
+        mobile,
+      </if>
+      <if test="level != null">
+        level,
+      </if>
+      <if test="experience != null">
+        experience,
+      </if>
+      <if test="money != null">
+        money,
+      </if>
+      <if test="flow != null">
+        flow,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="openId != null">
+        #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null">
+        #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="imgUrl != null">
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="mobile != null">
+        #{mobile,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null">
+        #{level,jdbcType=INTEGER},
+      </if>
+      <if test="experience != null">
+        #{experience,jdbcType=INTEGER},
+      </if>
+      <if test="money != null">
+        #{money,jdbcType=INTEGER},
+      </if>
+      <if test="flow != null">
+        #{flow,jdbcType=DOUBLE},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.cmcc.seed.model.User">
+    update user
+    <set>
+      <if test="openId != null">
+        open_id = #{openId,jdbcType=VARCHAR},
+      </if>
+      <if test="nickname != null">
+        nickname = #{nickname,jdbcType=VARCHAR},
+      </if>
+      <if test="imgUrl != null">
+        img_url = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="mobile != null">
+        mobile = #{mobile,jdbcType=VARCHAR},
+      </if>
+      <if test="level != null">
+        level = #{level,jdbcType=INTEGER},
+      </if>
+      <if test="experience != null">
+        experience = #{experience,jdbcType=INTEGER},
+      </if>
+      <if test="money != null">
+        money = #{money,jdbcType=INTEGER},
+      </if>
+      <if test="flow != null">
+        flow = #{flow,jdbcType=DOUBLE},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.cmcc.seed.model.User">
+    update user
+    set open_id = #{openId,jdbcType=VARCHAR},
+      nickname = #{nickname,jdbcType=VARCHAR},
+      img_url = #{imgUrl,jdbcType=VARCHAR},
+      mobile = #{mobile,jdbcType=VARCHAR},
+      level = #{level,jdbcType=INTEGER},
+      experience = #{experience,jdbcType=INTEGER},
+      money = #{money,jdbcType=INTEGER},
+      flow = #{flow,jdbcType=DOUBLE},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="addFlowById">
+    update user
+    set flow = flow + #{1,jdbcType=DOUBLE}
+    where id = #{0,jdbcType=BIGINT}
+  </update>
+
+  <update id="addExperienceById">
+    update user
+    set experience = experience + #{1,jdbcType=INTEGER}
+    where id = #{0,jdbcType=BIGINT}
+  </update>
+
+  <update id="decreaseFlow">
+    update user
+    set flow = flow - #{2,jdbcType=DOUBLE}
+    where id = #{0,jdbcType=BIGINT} and flow = #{1,jdbcType=DOUBLE}
+  </update>
+</mapper>

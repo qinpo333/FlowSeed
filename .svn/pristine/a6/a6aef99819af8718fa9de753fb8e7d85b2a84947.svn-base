@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>流量农场</title>
+
+    <style>
+        html,body{height: 100%; overflow: hidden;}
+        body{  margin: 0;  padding: 0; }
+    </style>
+</head>
+<body>
+    <img data-src="404.png" style="display: block; width: 100%">
+
+    <script>
+        var baseUrl = "../assets/imgs/";
+    </script>
+    <script src="../assets/js/zepto.min.js"></script>
+    <script src="../assets/js/base.min.js"></script>
+    <#--添加微信js文件-->
+    <script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+    <script>
+        wx.config({
+            debug : false,
+            appId : '${wxconfig.appid!}',
+            timestamp : ${wxconfig.timestamp!},
+            nonceStr : '${wxconfig.nonceStr!}',
+            signature : '${wxconfig.signature!}',
+            jsApiList : [ 'onMenuShareAppMessage',
+                'onMenuShareTimeline']
+            // 功能列表，我们要使用JS-SDK的什么功能
+        });
+
+        // config信息验证后会执行ready方法，所有接口调用都必须在config接口获得结果之后，config是一个客户端的异步操作，所以如果需要在 页面加载时就调用相关接口，则须把相关接口放在ready函数中调用来确保正确执行。对于用户触发时才调用的接口，则可以直接调用，不需要放在ready 函数中。
+        wx.ready(function() {
+            // 获取“分享给朋友”按钮点击状态及自定义分享内容接口
+            wx.onMenuShareAppMessage({
+                title : '快来流量农场种流量、收流量啦', // 分享标题
+                desc : "我刚刚在中国移动10086微信号流量农场收获了流量，你也快来试试吧！", // 分享描述
+                link : "http://wx.10086.cn/lottery/seed/farm/login?state=${openid!}",
+                imgUrl: "http://wx.10086.cn/lottery/seed/assets/imgs/logo.png",
+            <#--link : "http://wx.4ggogo.com/lottery/lottery/index.html?openid=${openid!}"-->
+                type : 'link', // 分享类型,music、video或link，不填默认为link
+//            trigger: function (res) {
+//                alert('用户点击发送给朋友');
+//            },
+                success: function (res) {
+                <#--
+                $.ajax({
+                    url: ctx + "/hebeisecond/lottery/addCount.html",
+                    type: "GET",
+                    async: false,
+                    dataType: "json",
+                    success: function () {
+                        $.ajax({
+                            url: ctx + "/hebeisecond/lottery/addCount.html",
+                            type: "GET",
+                            async: false,
+                            dataType: "json",
+                            data:{type:0},
+                            success: function () {
+                            }
+                        });
+                    }
+                });-->
+                }
+//            cancel: function (res) {
+//                alert('已取消');
+//            }
+            });
+            wx.onMenuShareTimeline({
+                title : '快来流量农场种流量、收流量啦', // 分享标题
+                desc : "我刚刚在中国移动10086微信号流量农场收获了流量，你也快来试试吧！", // 分享描述
+            <#--link : "http://wx.4ggogo.com/lottery/lottery/index.html?openid=${openid!}"-->
+                link : "http://wx.10086.cn/lottery/seed/farm/login?state=${openid!}",
+                imgUrl: "http://wx.10086.cn/lottery/seed/assets/imgs/logo.png",
+                type : 'link',// 分享类型,music、video或link，不填默认为link
+//            trigger: function (res) {
+//                alert('用户点击发送给朋友');
+//            },
+
+                success: function (res) {
+                <#--
+                 $.ajax({
+                     url: ctx + "/hebeisecond/lottery/addCount.html",
+                     type: "GET",
+                     async: false,
+                     dataType: "json",
+                     data:{type:1},
+                     success: function () {
+                     }
+                 });-->
+                }
+
+//            cancel: function (res) {
+//                alert('已取消');
+//            }
+            });
+        });
+    </script>
+</body>
+</html>

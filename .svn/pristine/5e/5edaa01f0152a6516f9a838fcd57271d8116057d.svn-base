@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>兑换</title>
+
+    <link rel="stylesheet" href="../assets/css/seeds.min.css"/>
+    <link rel="stylesheet" href="../assets/css/weui_toast.min.css"/>
+
+    <style>
+        .bg-img{  position: absolute;  top: 0;  left: 0; z-index: 0;}
+        body{ background-color: #b1e5e4;  font-family: "Microsoft YaHei";}
+        .form{position: relative; background: url(../assets/imgs/form-bg.png); background-size: 100% 100%; margin: 0 auto; width: 90%; margin-top: 2rem; z-index: 10;
+        padding: 2rem; font-size: 1.4rem; color: #5a320b;}
+        .form-row{margin: 1rem 0; position: relative;}
+        .form-row label{font-weight: 400; }
+        .tip-color{color: #996c42; font-size: 1rem;}
+        #tel-input{height: 3rem; font-size: 1.4rem; color: #6a3906; background: white; border: none; border-radius: 4px; text-indent: 10px; outline: none;  }
+        .package-size{float: left; display: inline-block; width: 27%; margin: 0 7px; background-color: white; border-radius: 3px; text-align: center; padding: 8px;
+        font-weight: 700; }
+        .package-size.active{background-image: url(../assets/imgs/selected.png); background-position: right top; background-size: 24px 24px; background-repeat: no-repeat;}
+        .package-size.disabled{background-color: #fef6d9; color: #c9aa79;}
+        .tel-tip{  position: absolute;  font-size: 1rem;  left: 6rem; top: 3.2rem;}
+        .buttons-wrap{
+            position: absolute; width: 80%; bottom: 22%; left: 10%; overflow: hidden;
+            background: url(../assets/imgs/buttons-bg.png); background-size: 100% 100%;  padding: 3px 1px;
+        }
+        .buttons-wrap .btn{width: 48%; padding: 8px 0; height: auto; line-height: normal; margin: 0 1%;}
+        .btn-ok{background: url(../assets/imgs/btn-bg-left.png); background-size: 100% 100%;}
+        .btn-cancel{background: url(../assets/imgs/btn-bg-cancel.png); background-size: 100% 100%;}
+        .modal-body{min-height: 120px;}
+    </style>
+</head>
+<body>
+    <img class="bg-img" data-src="warehouse.png">
+
+    <div class="form">
+        <div class="form-row" style="margin-bottom: 1.8rem; height: 3rem;">
+            <label>手机号码:</label>
+            <input id="tel-input" type="tel" maxlength="13" autocomplete="on">
+            <label class="tel-tip"></label>
+        </div>
+        <div class="form-row">
+            <label>充值额度:</label>
+            <span class="tip-color">(你可以兑换<span id="flow">--</span>MB流量)</span>
+        </div>
+        <div class="form-row" id="flow-package">
+            <ul style="overflow: hidden; padding: 0;">
+                <li class="package-size" data-value="30">30M</li>
+                <li class="package-size" data-value="50">50M</li>
+                <li class="package-size" data-value="100">100M</li>
+            </ul>
+        </div>
+    </div>
+
+    <div style=" position: relative;" class="mt-20 text-center">
+        <img src="../assets/imgs/btn-bg.png" class="btn-bg">
+        <div class="btn-text" id="confirm-btn">确定兑换</div>
+    </div>
+
+    <!-- loading -->
+    <div id="loadingToast" class="weui_loading_toast">
+        <div class="weui_mask_transparent"></div>
+        <div class="weui_toast">
+            <div class="weui_loading">
+                <div class="weui_loading_leaf weui_loading_leaf_0"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_1"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_2"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_3"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_4"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_5"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_6"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_7"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_8"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_9"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_10"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_11"></div>
+            </div>
+            <p class="weui_toast_content">数据加载中</p>
+        </div>
+    </div><!-- loading end -->
+
+
+    <div id="tipToast" class="weui_loading_toast">
+        <div class="weui_mask_transparent"></div>
+        <div class="tip_weui_toast">
+            <p id="tip_toast_content"></p>
+        </div>
+    </div>
+
+    <script>
+        var baseUrl = "../assets/imgs/";
+        var ctx = "http://mockapi.ngrok.cc/mock/seeds";
+
+        var DIALOG_TEXT = {
+            CONFIRM: "确认兑换$$FLOW$$MB<br>到手机号：$$PHONE$$",
+            SUCCESS: "兑换成功!",
+            ERROR: "兑换失败!",
+            NET_ERROR: "网络异常!"
+        };
+
+        var DIALOG_ADS = {
+            "CONFIRM": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "SUCCESS": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "ERROR": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "NET_ERROR": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            }
+        };
+    </script>
+
+    <script src="../assets/js/zepto.min.js"></script>
+    <script src="../assets/js/base.min.js"></script>
+    <script src="../assets/js/exchange.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>流量农场</title>
+
+    <link rel="stylesheet" href="../assets/css/seeds.min.css"/>
+    <link rel="stylesheet" href="../assets/css/weui_toast.min.css"/>
+    <link rel="stylesheet" href="../assets/css/index.min.css"/>
+
+    <style>
+        .tool-item{width: 33.33%; text-align: center;}
+        .tool-item>img{width: 70%;}
+        .tool-item>span>img {  width: 42%;  }
+    </style>
+</head>
+<body>
+    <div class="ground">
+        <div class="ground-back">
+            <img class="noTouch" data-src="bg-part1.png">
+            <div class="client">
+                <div class="userInfo">
+                    <div class="user-photo-wrap">
+                        <img src="" class="userPhoto">
+                        <div class="userName">死小强</div>
+                    </div>
+                    <div class="bars">
+                        <div class="user-bar">
+                            <div class="bar-part cj-left"></div>
+                            <div class="">成就：<span id="user_achievements"></span></div>
+                        </div>
+                    </div>
+                </div>
+                <a href="help.html"><div class="icon-help"></div></a>
+            </div>
+            <img class="noTouch flag-img" data-src="flag.png">
+        </div>
+        <div class="ground-bottom">
+            <img class="noTouch" data-src="bg-part2.png">
+            <div class="ground-grid">
+                <img data-src="ground.png">
+                <div class="trees">
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                    <div class="tree">
+                        <img class="plant" src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools">
+            <div class="tool-item" id="tool-water">
+                <img src="../assets/imgs/water.png">
+                <span>
+                    <img src="../assets/imgs/water-text.png">
+                </span>
+            </div>
+            <div class="tool-item" id="tool-rob">
+                <img src="../assets/imgs/rob.png">
+                <span>
+                    <img src="../assets/imgs/rob-text.png" style="width: 60%;margin-top: -8%;">
+                </span>
+            </div>
+            <div class="tool-item" id="tool-home" style="display: none">
+                <img src="../assets/imgs/gohome.png">
+                <span>
+                    <img src="../assets/imgs/gohome-text.png">
+                </span>
+            </div>
+            <div class="tool-item" id="tool-join" style="display: none">
+                <img src="../assets/imgs/join.png">
+                <span>
+                    <img src="../assets/imgs/join-text.png" style="width: 83%;margin-top: 4px;">
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- loading -->
+    <div id="loadingToast" class="weui_loading_toast">
+        <div class="weui_mask_transparent"></div>
+        <div class="weui_toast">
+            <div class="weui_loading">
+                <div class="weui_loading_leaf weui_loading_leaf_0"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_1"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_2"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_3"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_4"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_5"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_6"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_7"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_8"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_9"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_10"></div>
+                <div class="weui_loading_leaf weui_loading_leaf_11"></div>
+            </div>
+            <p class="weui_toast_content">数据加载中</p>
+        </div>
+    </div><!-- loading end -->
+
+    <script>
+        var baseUrl = "../assets/imgs/";
+        var ctx = "http://mockapi.ngrok.cc/mock/seeds";
+        var friendOpenId = "xxxxx";
+
+        var DIALOG_TEXT = {
+            "WATER_SUCCESS": "多谢你为$$NAME$$的流量种子浇水！",
+            "WATER_ALL_WATERED": "今天已经浇过水了！<br>请明天再来！",
+            "WATER_OVER": "已达到浇水上限，请明天再来吧!",
+            "WATER_SHARE": "浇水越多就能收获越多流量!",
+            "WATER_DEAD": "不能给已经枯死的流量种子浇水！",
+            "STEAL_DEAD": "不能偷已经枯死的流量种子！",
+            "STEAL": "恭喜您成功偷到了<br>$$COUNT$$MB流量果实",
+            "STEAL_NONE": "今天运气不好<br>请明天再来！",
+            "STOLEN": "该好友已被偷过<br>请明天再来！",
+            "STEAL_FAIL": "今天运气不好<br>请明天再来！",
+            "STEAL_OVER": "今天偷流量次数达到上限<br>请明天再来！",
+            "FAIL": "抱歉！网络繁忙~",
+            "WATER_NO_PLANTS": "该好友还没有流量种子，不能浇水！",
+            "STEAL_NO_PLANTS": "该好友还没有流量种子，不能偷流量！"
+        };
+
+        var DIALOG_ADS = {
+            "WATER_SUCCESS": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "WATER_ALL_WATERED": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "WATER_OVER": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "WATER_SHARE": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "WATER_DEAD": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "STEAL": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "STEAL_NONE": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "STOLEN": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "STEAL_OVER": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "STEAL_FAIL": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            },
+            "FAIL": {
+                img: baseUrl + "dialog_ad.jpg",
+                link: "http://wx.10086.cn/gfms/app/apk/html/4GDownload.html"
+            }
+        };
+    </script>
+
+    <script src="../assets/js/zepto.min.js"></script>
+    <script src="../assets/js/base.min.js"></script>
+    <script>
+        $(document).on("touchmove", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    </script>
+    <script src="../src/js/friend.js"></script>
+</body>
+</html>

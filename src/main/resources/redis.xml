@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<!-- redis连接池配置 -->
+	<!--<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">-->
+	<!--&lt;!&ndash; 最大连接数 &ndash;&gt;-->
+	<!--<property name="maxTotal" value="50" />-->
+	<!--&lt;!&ndash; 最大空闲数 &ndash;&gt;-->
+	<!--<property name="maxIdle" value="10" />-->
+	<!--&lt;!&ndash; 尝试获取连接最大等待时间 &ndash;&gt;-->
+	<!--<property name="maxWaitMillis" value="1000" />-->
+	<!--&lt;!&ndash; 调用borrowObject方法时进行校验 &ndash;&gt;-->
+	<!--<property name="testOnBorrow" value="true" />-->
+	<!--</bean>-->
+
+	<bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		<property name="maxWaitMillis" value="5000"/>
+		<property name="maxIdle" value="300"/>
+		<property name="testOnBorrow" value="true"/>
+		<property name="maxTotal" value="500"/>
+	</bean>
+	<bean id="shardedJedisPool" class="redis.clients.jedis.ShardedJedisPool" destroy-method="destroy">
+		<constructor-arg ref="poolConfig"/>
+		<constructor-arg>
+			<list>
+
+				<!--萧山机房redis配置start-->
+
+				<bean class="redis.clients.jedis.JedisShardInfo">
+					<constructor-arg value="172.21.26.77"/>
+					<constructor-arg type="int" value="6379"/>
+					<constructor-arg value="instance:01"/>
+				</bean>
+
+				<!--<bean class="redis.clients.jedis.JedisShardInfo">-->
+					<!--<constructor-arg value="192.168.33.2"/>-->
+					<!--<constructor-arg type="int" value="6379"/>-->
+					<!--<constructor-arg value="instance:01"/>-->
+				<!--</bean>-->
+				<!--<bean class="redis.clients.jedis.JedisShardInfo">
+					<constructor-arg value="192.168.12.4"/>
+					<constructor-arg type="int" value="6380"/>
+					<constructor-arg value="instance:02"/>
+				</bean>
+				<bean class="redis.clients.jedis.JedisShardInfo">
+					<constructor-arg value="192.168.12.4"/>
+					<constructor-arg type="int" value="6381"/>
+					<constructor-arg value="instance:03"/>
+				</bean>-->
+
+				<!-- 发布用 <property name="password" value="qwYRlAKNVfbWnQe1ufe_6fuH8Wx3i6gP"/>-->
+				<!--
+				<bean class="redis.clients.jedis.JedisShardInfo">
+					<constructor-arg value="192.168.12.53"/>
+					<constructor-arg type="int" value="6379"/>
+					<constructor-arg value="instance:01"/>
+
+				</bean>
+				<bean class="redis.clients.jedis.JedisShardInfo">
+					<constructor-arg value="192.168.12.54"/>
+					<constructor-arg type="int" value="6379"/>
+					<constructor-arg value="instance:02"/>
+				</bean>
+				-->
+			</list>
+		</constructor-arg>
+	</bean>
+
+
+	<!--<bean id="listener" init-method="start"  destroy-method="stop" class="com.cmcc.flow.queue.QueueListener">-->
+	<!--<constructor-arg name="queueName" value="queue1" />-->
+	<!--&lt;!&ndash; 从队列取值等待时间，单位秒 &ndash;&gt;-->
+	<!--<constructor-arg name="timeout" value="1" />-->
+	<!--<constructor-arg name="pool" ref="shardedJedisPool" />-->
+	<!--&lt;!&ndash; 重连等待时间 单位 毫秒 &ndash;&gt;-->
+	<!--<constructor-arg name="waitingTime" value="5000" />-->
+	<!--</bean>-->
+
+</beans>

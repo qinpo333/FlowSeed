@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cmcc.seed.dao.CropGrowMapper">
+  <resultMap id="BaseResultMap" type="com.cmcc.seed.model.CropGrow">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="crop_id" jdbcType="BIGINT" property="cropId" />
+    <result column="stage" jdbcType="INTEGER" property="stage" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="desc" jdbcType="VARCHAR" property="desc" />
+    <result column="img" jdbcType="VARCHAR" property="img" />
+    <result column="time" jdbcType="BIGINT" property="time" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+
+  <sql id="Base_Column_List">
+    id, crop_id, stage, name, 'desc', img, time, create_time, update_time
+  </sql>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from crop_grow
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByCropId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from crop_grow
+    where crop_id = #{cropId,jdbcType=BIGINT}
+    order by stage
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from crop_grow
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="com.cmcc.seed.model.CropGrow">
+    insert into crop_grow (id, crop_id, stage, 
+      name, desc, img, time, 
+      create_time, update_time)
+    values (#{id,jdbcType=BIGINT}, #{cropId,jdbcType=BIGINT}, #{stage,jdbcType=INTEGER},
+      #{name,jdbcType=VARCHAR}, #{desc,jdbcType=VARCHAR}, #{img,jdbcType=VARCHAR}, #{time,jdbcType=BIGINT}, 
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+
+  <insert id="insertSelective" parameterType="com.cmcc.seed.model.CropGrow">
+    insert into crop_grow
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="cropId != null">
+        crop_id,
+      </if>
+      <if test="stage != null">
+        stage,
+      </if>
+      <if test="name != null">
+        name,
+      </if>
+      <if test="desc != null">
+        desc,
+      </if>
+      <if test="img != null">
+        img,
+      </if>
+      <if test="time != null">
+        time,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="cropId != null">
+        #{cropId,jdbcType=BIGINT},
+      </if>
+      <if test="stage != null">
+        #{stage,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="desc != null">
+        #{desc,jdbcType=VARCHAR},
+      </if>
+      <if test="img != null">
+        #{img,jdbcType=VARCHAR},
+      </if>
+      <if test="time != null">
+        #{time,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.cmcc.seed.model.CropGrow">
+    update crop_grow
+    <set>
+      <if test="cropId != null">
+        crop_id = #{cropId,jdbcType=BIGINT},
+      </if>
+      <if test="stage != null">
+        stage = #{stage,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="desc != null">
+        desc = #{desc,jdbcType=VARCHAR},
+      </if>
+      <if test="img != null">
+        img = #{img,jdbcType=VARCHAR},
+      </if>
+      <if test="time != null">
+        time = #{time,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.cmcc.seed.model.CropGrow">
+    update crop_grow
+    set crop_id = #{cropId,jdbcType=BIGINT},
+      stage = #{stage,jdbcType=INTEGER},
+      name = #{name,jdbcType=VARCHAR},
+      desc = #{desc,jdbcType=VARCHAR},
+      img = #{img,jdbcType=VARCHAR},
+      time = #{time,jdbcType=BIGINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

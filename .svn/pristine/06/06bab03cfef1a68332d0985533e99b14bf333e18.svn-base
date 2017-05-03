@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>帮助</title>
+    <link rel="stylesheet" href="../assets/css/seeds.min.css"/>
+    <link rel="stylesheet" href="../assets/css/weui_toast.min.css"/>
+
+    <style>
+        .bg-img{  position: absolute;  top: 0;  left: 0; z-index: 0;}
+        body{ background-color: #b1e5e4; }
+        p{margin: 0 0 4px;}
+        .form{position: relative; background: url(../assets/imgs/form-bg.png); background-size: 100% 100%; margin: 0 auto; width: 90%; margin-top: 2rem; z-index: 10;
+            padding: 2.5rem; font-size: 1.5rem; color: #5a320b; text-indent: 4rem; line-height: 1.7; font-family: "mini";}
+    </style>
+</head>
+<body>
+    <img class="bg-img" data-src="warehouse.png">
+
+    <div class="form">
+        新手指南：<br>
+        <p>1、种子必须经常浇水，浇水完成后点击右上角即可邀请好友浇水。长时间不浇水种子将会枯萎。</p>
+        <p>2、种子成熟后可获得流量，收获完成后可进入“仓库”兑换流量。</p>
+        <p>3、为种子浇水、邀请好友浇水、收获即可获得经验值，经验值越多惊喜越多。</p>
+        <p>4、微信好友点击您分享的链接即可加入您的流量种子好友列表，您可以通过好友列表为您的好友浇水或偷好友流量。</p>
+        <p>5、如有疑问，请在微信对话框输入“86”，由人工小妹为您解答。</p>
+    </div>
+    <script>
+        var baseUrl = "../assets/imgs/";
+    </script>
+    <script src="../assets/js/zepto.min.js"></script>
+    <script src="../assets/js/base.min.js"></script>
+</body>
+</html>

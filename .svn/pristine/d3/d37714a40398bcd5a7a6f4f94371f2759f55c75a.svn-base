@@ -1,0 +1,8 @@
+jdbc.driverClassName=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://192.168.32.45:3306/seed?useUnicode=true&characterEncoding=UTF-8&allowMultiQueries=true
+jdbc.username=seed
+jdbc.password=eWsAG84mILPAYsDbMAzjX0uLx08XcVPUwA
+
+#jdbc.url=jdbc:mysql://192.168.35.232:3306/seed?useUnicode=true&characterEncoding=UTF-8&allowMultiQueries=true
+#jdbc.username=seed
+#jdbc.password=0BdlAr3R

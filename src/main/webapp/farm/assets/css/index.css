@@ -1,0 +1,400 @@
+html,
+body {
+  height: 100%;
+}
+body {
+  overflow: hidden;
+  font-size: 62.5%;
+}
+.ground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.ground-back,
+.ground-bottom {
+  position: relative;
+}
+.ground-back img,
+.ground-bottom img {
+  display: block;
+}
+.ground-grid {
+  margin-top: 0;
+  position: absolute;
+  top: 0;
+}
+.tools {
+  position: fixed;
+  bottom: 1rem;
+  overflow: hidden;
+  padding: 0 10px;
+}
+.tool-item {
+  float: left;
+  width: 25%;
+  padding: 0 10px;
+}
+.tool-item > img {
+  width: 100%;
+}
+.tool-item > span {
+  text-align: center;
+  display: block;
+}
+.tool-item > span > img {
+  width: 60%;
+}
+.noTouch {
+  touch-action: none;
+  pointer-events: none;
+}
+/*.trees{position: absolute; top: 5%; left: 15%; width: 70%; height: 86%; transform: rotateZ(-24deg) skew(40deg, 0deg); overflow: hidden;}*/
+.trees,
+.status-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 96%;
+}
+.tree,
+.status-item {
+  width: 19%;
+  float: left;
+  height: 16.665%;
+  position: absolute;
+}
+.trees .tree:nth-child(1) {
+  left: 50%;
+  top: 8.5%;
+  -webkit-transform: translate(-50%, 0);
+  -moz-transform: translate(-50%, 0);
+  -ms-transform: translate(-50%, 0);
+  -o-transform: translate(-50%, 0);
+  transform: translate(-50%, 0);
+}
+.trees .tree:nth-child(2) {
+  left: 30%;
+  top: 33.3%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.trees .tree:nth-child(3) {
+  left: 1.57%;
+  top: 50%;
+  -webkit-transform: translate(0, -50%);
+  -moz-transform: translate(0, -50%);
+  -ms-transform: translate(0, -50%);
+  -o-transform: translate(0, -50%);
+  transform: translate(0, -50%);
+}
+.trees .tree:nth-child(4) {
+  left: 30%;
+  top: 67%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.trees .tree:nth-child(5) {
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.trees .tree:nth-child(6) {
+  left: 71%;
+  top: 33.3%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.trees .tree:nth-child(7) {
+  right: -9.6%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.trees .tree:nth-child(8) {
+  left: 61%;
+  top: 66.6%;
+  -webkit-transform: translate(0, -50%);
+  -moz-transform: translate(0, -50%);
+  -ms-transform: translate(0, -50%);
+  -o-transform: translate(0, -50%);
+  transform: translate(0, -50%);
+}
+.trees .tree:nth-child(9) {
+  left: 50%;
+  top: 83.3%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -o-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+/*.plant{width: 46%; position: absolute; bottom: 20%; transform-origin: center bottom;transform: rotateZ(24deg) skew(-27deg, 17deg);*/
+/*left: 13%;  }*/
+.plant {
+  width: 100%;
+  position: absolute;
+  bottom: 9px;
+  left: 0;
+}
+.plant.plant1 {
+  bottom: 26%;
+  left: 23%;
+  width: 63.25%;
+}
+.plant.plant2 {
+  bottom: 29%;
+  left: 13%;
+  width: 82%;
+}
+.plant.plant3 {
+  bottom: 29%;
+  left: 0;
+  width: 100%;
+}
+.plant.plant4 {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+.plant.plant5 {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+.plant.plant6 {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+.status-icon {
+  position: absolute;
+  width: 10%;
+  z-index: 1000;
+  opacity: 0.8;
+  cursor: pointer;
+  -webkit-animation-duration: 1.5s;
+  animation-duration: 1.5s;
+  -webkit-animation-name: bounce;
+  animation-name: bounce;
+  -webkit-animation-iteration-count: infinite;
+  animation-iteration-count: infinite;
+  -webkit-transform-origin: center center;
+  transform-origin: center center;
+  -webkit-animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+@-webkit-keyframes bounce {
+  0%,
+  100% {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    -webkit-transform: translate3d(0, -10px, 0);
+    transform: translate3d(0, -10px, 0);
+  }
+}
+@keyframes bounce {
+  0%,
+  100% {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    -webkit-transform: translate3d(0, -10px, 0);
+    transform: translate3d(0, -10px, 0);
+  }
+}
+.matureStatus {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  margin-left: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #38200A;
+  white-space: nowrap;
+}
+.client {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.userInfo {
+  margin: 20px 10px 0 10px;
+}
+.user-photo-wrap {
+  width: 5rem;
+  height: 5rem;
+  border: 1px solid #5a320b;
+  border-radius: 4px;
+  background: #dcdcdc;
+  position: relative;
+  overflow: hidden;
+  background-image: url(../imgs/default-user.png);
+  background-repeat: no-repeat;
+  background-position: center 0.5rem;
+  background-size: 2rem 2.2rem;
+}
+.userName {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(238, 238, 238, 0.7);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 3px;
+  text-align: center;
+  display: none;
+}
+.icon-help {
+  position: absolute;
+  right: 15px;
+  top: 20px;
+  width: 3rem;
+  height: 3rem;
+  background: url(../imgs/help.png);
+  background-size: 100% 100%;
+}
+.bars {
+  position: absolute;
+  top: 8px;
+  margin-left: 7.5rem;
+  height: 5.8rem;
+  font-size: 1.5rem;
+}
+.user-bar {
+  position: relative;
+  height: 2rem;
+  width: 13rem;
+  white-space: nowrap;
+  line-height: 2.2rem;
+  background: url(../imgs/bar-bg.png);
+  margin-top: 0.5rem;
+  padding-left: 1.2rem;
+  padding-right: 1.22rem;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.4);
+}
+.bar-part {
+  background-size: 100% 100%;
+  position: absolute;
+  height: 2.3rem;
+  width: 2.3rem;
+  left: -1.2rem;
+  top: -0.15rem;
+}
+.bar-center {
+  width: auto;
+  background: url(../imgs/bar-bg.png);
+  background-size: 100% 100%;
+  height: 100%;
+  line-height: 2.2rem;
+}
+.cj-left {
+  background-image: url(../imgs/star.png);
+}
+.llgs-left {
+  background-image: url(../imgs/heart.png);
+}
+.exp-left {
+  background-image: url(../imgs/exp-left.png);
+}
+.bar-right {
+  background: url(../imgs/bar-right.png);
+  background-size: 100% 100%;
+  width: 1.22rem;
+  height: 100%;
+}
+.flag-img {
+  position: absolute;
+  bottom: -3%;
+  left: -8%;
+  width: 70%;
+}
+#user_achievements,
+.user-flow-wrap {
+  display: inline-block;
+  width: 7rem;
+}
+.user-exp-wrap {
+  display: inline-block;
+  width: 5.5rem;
+}
+.buttons-wrap {
+  position: absolute;
+  width: 100%;
+  bottom: 22%;
+  left: 0;
+  overflow: hidden;
+  background: url(../imgs/buttons-bg.png);
+  background-size: 100% 100%;
+  padding: 3px 1px;
+}
+.buttons-wrap .btn {
+  width: 48%;
+  padding: 8px 0;
+  height: auto;
+  line-height: normal;
+  margin: 0 1%;
+}
+.btn-ok {
+  background: url(../imgs/btn-bg-left.png);
+  background-size: 100% 100%;
+}
+.btn-cancel {
+  background: url(../imgs/btn-bg-cancel.png);
+  background-size: 100% 100%;
+}
+#share_dialog,
+#share_dialog-water {
+  background-image: url(../imgs/share-arrow.png);
+  background-repeat: no-repeat;
+  background-position: right top;
+  background-size: 42% auto;
+}
+#share_dialog-water {
+  background-image: url(../imgs/share-arrow-water.png);
+}
+#share_dialog .modal-dialog,
+#share_dialog-water .modal-dialog {
+  background-image: url(../imgs/form-bg.png);
+}
+#share_dialog .modal-content,
+#share_dialog-water .modal-content {
+  padding-top: 7%;
+  min-height: 0;
+}
+#share_dialog .modal-tools a,
+#share_dialog-water .modal-tools a {
+  height: auto;
+  line-height: 22px;
+}
+#share_dialog .modal-text,
+#share_dialog-water .modal-text {
+  margin-top: 30px;
+}

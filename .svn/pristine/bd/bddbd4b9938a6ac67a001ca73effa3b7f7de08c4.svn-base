@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="FlowSeed:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="seed.war">
+      <element id="artifact" artifact-name="FlowSeed:war exploded" />
+    </root>
+  </artifact>
+</component>

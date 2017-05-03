@@ -1,0 +1,1061 @@
+package com.cmcc.seed.controller;
+
+import com.cmcc.seed.enems.GiveStatus;
+import com.cmcc.seed.enems.LandStatus;
+import com.cmcc.seed.enems.OpType;
+import com.cmcc.seed.enems.UserLevelEnum;
+import com.cmcc.seed.mall_cp.CPClient;
+import com.cmcc.seed.mall_cp.PresentReq;
+import com.cmcc.seed.model.*;
+import com.cmcc.seed.pojo.FlowChangeDetail;
+import com.cmcc.seed.pojo.PlantPojo;
+import com.cmcc.seed.pojo.ReceiveResult;
+import com.cmcc.seed.service.*;
+import com.cmcc.seed.utils.AESUtil;
+import com.cmcc.seed.utils.Constants;
+import com.cmcc.seed.utils.WxConfig;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang.time.DateUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import redis.clients.jedis.ShardedJedis;
+import sun.util.calendar.CalendarUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+/**
+ * Created by cmcc on 16/1/15.
+ */
+@Controller
+@RequestMapping("/seed/farm")
+public class IndexController extends BaseController {
+
+    private Logger logger = Logger.getLogger(IndexController.class);
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private LandService landService;
+
+    @Autowired
+    private CropService cropService;
+
+    @Autowired
+    private ExchangeService exchangeService;
+
+    @Autowired
+    private OpLogService opLogService;
+
+    @Autowired
+    private GiveService giveService;
+
+    @Autowired
+    private CropGrowService cropGrowService;
+
+    @Autowired
+    private CacheService cacheService;
+
+    /**
+     * 根据用户OPENID查询用户信息
+     * @return
+     */
+    @RequestMapping(value = "/getUserInfo",method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String,Object> getUserInfo(HttpServletRequest request) {
+        logger.info("查询用户信息开始。。。");
+        long start = System.currentTimeMillis();
+
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        //从session中获取当前用户的OPENID
+        String currentOpenId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            currentOpenId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        //查询指定用户
+        String friendOpenId = request.getParameter("friendOpenId");
+        if (StringUtils.isNotBlank(friendOpenId)) {
+            currentOpenId = friendOpenId;
+            logger.info("查询指定用户的信息：" + friendOpenId);
+        } else {
+            logger.info("查询当前用户的信息：" + currentOpenId);
+        }
+
+        if (StringUtils.isNotBlank(currentOpenId)) {
+            // 根据OPENID查询用户信息
+            //用户的信息需从redis中查询
+            User userInfo = userService.getUserByOpenId(currentOpenId);
+            if (userInfo != null) {
+                map.put("photo", userInfo.getImgUrl());
+                map.put("name", userInfo.getNickname());
+                map.put("flow", userInfo.getFlow());
+                map.put("achievements", UserLevelEnum.getTitle(userInfo.getLevel()));
+                map.put("exp", userInfo.getExperience());
+                //判断用户是否已拥有土地并已种植作物，如果没有则是新用户
+                //TODO:用户是否为新用户需存入redis
+                map.put("isNewUser", userService.isNewUser(userInfo));
+            }
+        }
+
+        logger.info("查询用户信息结束。。。耗时：" + (System.currentTimeMillis() - start) + "ms");
+        return map;
+    }
+
+    /**
+     * 新的土地上种植作物
+     * @return
+     */
+    @RequestMapping(value = "/plant",method = RequestMethod.POST)
+    @ResponseBody
+    public PlantPojo plant(HttpServletRequest request) {
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        if (StringUtils.isNotBlank(openId)) {
+            //根据openId从redis中查询用户信息
+            User user = userService.getUserByOpenId(openId);
+
+            if (user != null) {
+                Long landId = null;
+
+                String landIdStr = request.getParameter("plantId");
+                if (StringUtils.isNotBlank(landIdStr)){
+                    landId = Long.parseLong(landIdStr);
+                }
+
+                //TODO:暂时只允许用户种植一块土地，以后需根据经验来进行校验
+                List<Land> lands = landService.getLandsByUserId(user.getId());
+                for (Land land : lands) {
+                    if (land.getCropId() != null) {
+                        return null;
+                    }
+                }
+
+                //查询活动发送的种子列表(作物的ID为key)
+                List<String> cropIds = cacheService.lrange(Constants.REDIS_CROPIDS, 0, -1);
+
+                for (String cropId : cropIds) {
+                    //查询活动所剩种子数，如果大于0，则进行种植
+                    Long amount = cacheService.decr(cropId);
+                    if (amount >= 0) {
+                        Land land = userService.doPlant(user.getId(), landId, Long.parseLong(cropId));
+                        return landService.transFrom(land);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        return null;
+
+    }
+
+    /**
+     * 根据用户OPENID查询用户的作物列表
+     * @return
+     */
+    @RequestMapping(value = "/getPlants",method = RequestMethod.GET)
+    @ResponseBody
+    public List<PlantPojo> getPlants(HttpServletRequest request) {
+        logger.info("查询用户作物信息开始。。。");
+        long start = System.currentTimeMillis();
+
+        List<PlantPojo> plantList = new ArrayList<PlantPojo>();
+
+        //从session中获取当前用户的OPENID
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        //查询指定用户
+        String friendOpenId = request.getParameter("friendOpenId");
+        if (StringUtils.isNotBlank(friendOpenId)) {
+            openId = friendOpenId;
+            logger.info("查询指定用户的信息：" + friendOpenId);
+        } else {
+            logger.info("查询当前用户的信息：" + openId);
+        }
+
+        if (StringUtils.isNotBlank(openId)) {
+            //根据OPENID从redis中查询用户信息，得到用户id
+            User user = userService.getUserByOpenId(openId);
+            long userId = user.getId();
+            //根据userId查询用户的作物列表
+            List<Land> landList = landService.getLandsByUserId(userId);
+
+            plantList = landService.transFrom(landList);
+        }
+
+        logger.info("查询用户作物信息结束。。。耗时：" + (System.currentTimeMillis() - start));
+        return plantList;
+    }
+
+    /**
+     * 查询作物的剩余成熟时间
+     * @param plantId
+     * @return
+     */
+    @RequestMapping(value = "/getMatureTime/{plantId}",method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String,Object> getMatureTime(@PathVariable long plantId) {
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        //查询作物的剩余成熟时间
+        int matureHours = landService.getMatureHours(plantId);
+
+        if (matureHours > 24) {
+            if (matureHours % 24 == 0){
+                map.put("matureDays", matureHours/24);
+            } else {
+                map.put("matureDays", matureHours/24 + 1);
+            }
+        } else {
+            map.put("matureHours", matureHours);
+        }
+
+        return map;
+    }
+
+    /**
+     * 查询所有作物中剩余成熟时间最少的
+     * @return
+     */
+    @RequestMapping(value = "/getMinMatureTime",method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String,Object> getMinMatureTime() {
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        //查询session中的用户openid
+        String openId = getWxOpenid();
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+
+            if (user != null) {
+                //查询用户的作物列表
+                List<Land> landList = landService.getLandsByUserId(user.getId());
+                //TODO:此版本用户只会种植一个作物，所以暂时只查询一个作物的剩余成熟时间
+                if (landList != null && landList.size() > 0) {
+                    int matureHours = landService.getMatureHours(landList.get(0).getId());
+
+                    if (matureHours > 24) {
+                        if (matureHours % 24 == 0){
+                            map.put("matureDays", matureHours/24);
+                        } else {
+                            map.put("matureDays", matureHours/24 + 1);
+                        }
+                    } else {
+                        map.put("matureHours", matureHours);
+                    }
+                }
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * 给作物浇水，此版本只实现用户给自己的作物浇水
+     * @param plantId
+     * @return
+     */
+    @RequestMapping(value = "/water/{plantId}")
+    @ResponseBody
+    public Map<String,Object> water(HttpServletRequest request, @PathVariable long plantId)
+        throws Exception{
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        String openId = getWxOpenid();
+
+        //TODO:测试
+        if (Constants.ISTEST) {
+//        openId = request.getParameter("testOpenId");
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+        //浇水
+        //修改作物状态为正常，增加浇水记录，同时增加作物的实际收入
+        boolean success = userService.doWater(plantId, user.getId());
+
+        map.put("success", success);
+
+        //作物的收获量
+        Land landInfo = landService.getLandById(plantId);
+        map.put("flow", landInfo.getYield());
+
+        //查询作物的剩余成熟时间
+        int matureHours = landService.getMatureHours(plantId);
+
+        if (matureHours > 24) {
+            //作物成熟所需时间
+            long matureTime = cropGrowService.getMatureTimeByCropId(landInfo.getCropId());
+
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            //当前日期
+            Calendar aCalendar = Calendar.getInstance();
+            Date date = new Date(System.currentTimeMillis());
+            String dateStr = dateFormat.format(date);
+            date = dateFormat.parse(dateStr);
+            aCalendar.setTime(date);
+
+            //成熟日期
+            Calendar bCalendar = Calendar.getInstance();
+            Date date1 = new Date(landInfo.getPlantTime().getTime() + matureTime);
+            String dateStr1 = dateFormat.format(date1);
+            date1 = dateFormat.parse(dateStr1);
+            bCalendar.setTime(date1);
+
+            int days = 0;
+            while(aCalendar.before(bCalendar)){
+                days++;
+                aCalendar.add(Calendar.DAY_OF_YEAR, 1);
+            }
+
+            map.put("matureDays", days);
+        } else {
+            map.put("matureHours", matureHours);
+        }
+
+        return map;
+    }
+
+    /**
+     * 收获作物
+     * @param plantId
+     * @return
+     */
+    @RequestMapping(value = "/harvest/{plantId}")
+    @ResponseBody
+    public Map<String,Object> harvest(@PathVariable long plantId) {
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        String openId = getWxOpenid();
+
+        //TODO:测试
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //修改作物状态为可铲除，增加收获记录，同时修改用户的flow字段
+        double amount = userService.doHarvest(plantId, user.getId());
+
+        map.put("success", amount != -1);
+        map.put("amount", amount);
+
+        return map;
+    }
+
+    /**
+     * 铲除作物
+     * @param plantId
+     * @return
+     */
+    @RequestMapping(value = "/eradicate/{plantId}")
+    @ResponseBody
+    public Map<String,Object> eradicate(@PathVariable long plantId) {
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        String openId = getWxOpenid();
+
+        //TODO:测试
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+        User user = userService.getUserByOpenId(openId);
+        //铲除
+        boolean success = userService.doEradicate(plantId, user.getId());
+
+        map.put("success", success);
+        return map;
+    }
+
+    @RequestMapping(value = "/getUserFlow",method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String,Object> getUserFlow() {
+        Map<String,Object> map = new TreeMap<String, Object>();
+
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        map.put("flow", user.getFlow());
+        map.put("exp", user.getExperience());
+        return map;
+    }
+
+    @RequestMapping(value = "/exchange", method = RequestMethod.POST)
+    @ResponseBody
+    public Map<String ,Object> exchange(HttpServletRequest request) {
+        Map<String,Object> map = new TreeMap<String, Object>();
+        map.put("success", false);
+
+        String tel = request.getParameter("tel");
+        String flow = request.getParameter("flow");
+
+        if (StringUtils.isNotBlank(tel) && StringUtils.isNotBlank(flow)) {
+            String openId = getWxOpenid();
+
+            if (StringUtils.isNotBlank(openId)) {
+                User user = userService.getUserByOpenId(openId);
+                if (user != null) {
+                    boolean result = exchangeService.exchange(user.getId(), tel, Double.parseDouble(flow));
+                    map.put("success", result);
+                }
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * 查询用户流量收入明细列表
+     * @return
+     */
+    @RequestMapping(value = "/getOutFlowList")
+    @ResponseBody
+    public List<FlowChangeDetail> getOutFlowList() {
+        String openId = getWxOpenid();
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            if (user != null) {
+                List<FlowChangeDetail> details = opLogService.getOutFlowList(user.getId());
+                return details;
+            }
+        }
+
+        return new ArrayList<FlowChangeDetail>();
+    }
+
+    /**
+     * 查询用户流量支出明细列表
+     * @return
+     */
+    @RequestMapping(value = "/getInFlowList")
+    @ResponseBody
+    public List<FlowChangeDetail> getInFlowList() {
+        String openId = getWxOpenid();
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            if (user != null) {
+                List<FlowChangeDetail> details = opLogService.getIncomeFlowList(user.getId());
+                return details;
+            }
+        }
+
+        return new ArrayList<FlowChangeDetail>();
+    }
+
+    /**
+     * 获取赠送码
+     * @return
+     */
+    @RequestMapping("/getGiveCode")
+    @ResponseBody
+    public Map<String,Object> getGiveCode() {
+        //TODO:生成唯一赠送码
+        String code = UUID.randomUUID().toString();
+
+        logger.info("give code:" + code);
+
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("code", code);
+
+        return map;
+    }
+
+    /**
+     * 赠送页面分享
+     */
+    @RequestMapping(value = "/giveShare")
+    @ResponseBody
+    public Map<String,Object> giveShare(HttpServletRequest request) {
+        logger.info("进入赠送页面分享");
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+        openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //从页面得到随机唯一码
+        String code = request.getParameter("giveCode");
+        //从页面得到赠送的流量值
+        String amount = request.getParameter("amount");
+
+        System.out.println(code + "," + amount);
+
+        boolean result = false;
+        if (user != null) {
+            //插入分享数据到数据库
+            Give give = new Give();
+            give.setUserId(user.getId());
+            give.setUserName(user.getNickname());
+            give.setGiveTime(new Date());
+
+            Date expireDate = DateUtils.addDays(new Date(), 2);
+            expireDate = DateUtils.setHours(expireDate, 23);
+            expireDate = DateUtils.setMinutes(expireDate, 59);
+            expireDate = DateUtils.setSeconds(expireDate, 59);
+
+            give.setExpireTime(expireDate);
+            give.setCode(code);
+            give.setAmount(Double.parseDouble(amount));
+            give.setStatus(GiveStatus.GIVE.getValue());
+            result = giveService.startGive(give, user);
+        }
+
+        Map<String,Object> map = new TreeMap<String, Object>();
+        map.put("success", result);
+
+        return map;
+    }
+
+    /**
+     * 领取赠送
+     * @return
+     */
+    @RequestMapping(value = "/receive")
+    public String receive(HttpServletRequest request, ModelMap model) {
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        String giveCode = request.getParameter("giveCode");
+        String state = request.getParameter("state");
+
+        logger.info(openId + "打开领取链接！giveCode=" + giveCode);
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+
+            ReceiveResult result = null;
+
+            if (user != null && StringUtils.isNotBlank(giveCode)) {
+                result = giveService.receive(giveCode, user);
+                model.put("msg", result.getMsg());
+            }
+            configWx(openId, giveResultPage, model);
+            return "giveResult";
+        } else {
+            return "redirect:/seed/farm/login?from=receive&state=" + state + "&giveCode=" + giveCode;
+        }
+    }
+
+    /**
+     *检查是否可以给好友浇水
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/checkWater")
+    @ResponseBody
+    public Map<String, Object> checkWater(HttpServletRequest request) {
+        Map<String, Object> map = new TreeMap<String, Object>();
+        map.put("available", false);
+        map.put("msg", "none");
+
+        //当前用户
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //查询好友的作物是否可以浇水
+        String friendOpenId = request.getParameter("friendOpenId");
+        User friend = userService.getUserByOpenId(friendOpenId);
+
+        //查询好友的作物列表
+        List<Land> landList = landService.getLandsByUserId(friend.getId());
+        List<PlantPojo> plantPojoList = landService.transFrom(landList);
+
+        //能被好友浇水的作物数量（未成熟或未枯萎且当天被好友浇水次数少于三次）
+        int availableAmount = 0;
+
+        for (PlantPojo plantPojo : plantPojoList) {
+            if (plantPojo.getStatus() != LandStatus.HARVEST.getValue() &&
+                    plantPojo.getStatus() != LandStatus.SHOVEL.getValue()) {
+
+                //查询该土地今天被偷取的次数，如果被偷次数少于三次，则允许被偷
+                List<OpLog> landOplogs = opLogService.getTodayOpLogListByTypeAndLand(
+                        OpType.WATER_FRIEND.getValue(), plantPojo.getId());
+
+                if (landOplogs == null || landOplogs.size() < 3) {
+                    availableAmount++;
+                }
+            }
+        }
+
+        //未成熟的作物数量为0，即全部都成熟，则不能浇水
+        if (availableAmount == 0) {
+            return map;
+        }
+
+        //查询今天帮助好友浇水的次数，每人每天帮好友浇水的次数有限
+        List<OpLog> allWaterOplogs = opLogService.getTodayOpLogListByType(
+                OpType.WATER_FRIEND.getValue(), user.getId());
+
+        if (allWaterOplogs != null && allWaterOplogs.size() == 3) {
+            map.put("msg", "over");
+            return map;
+        }
+
+        //查询是否已帮该好友浇过水
+        List<OpLog> waterOplogs = opLogService.getTodayOpLogListByType(
+                OpType.WATER_FRIEND.getValue(), friend.getId(), user.getId());
+
+        if (waterOplogs != null && waterOplogs.size() > 0) {
+            map.put("msg", "over");
+        } else {
+            map.put("available", true);
+        }
+
+
+        return map;
+    }
+
+    /**
+     * 帮好友浇水
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/waterFriend")
+    @ResponseBody
+    public Map<String, Object> waterFriend(HttpServletRequest request) {
+        Map<String, Object> map = new TreeMap<String, Object>();
+
+        //当前用户
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //好友openid
+        String friendOpenId = request.getParameter("friendOpenId");
+        User friend = userService.getUserByOpenId(friendOpenId);
+
+        //查询好友的作物列表
+        List<Land> landList = landService.getLandsByUserId(friend.getId());
+
+        //能被浇水的土地
+        List<Land> availableLandList = new ArrayList<Land>();
+
+        //能被好友浇水的作物数量（未成熟、未枯萎的且当天被好友浇水次数少于两次）
+        int availableAmount = 0;
+
+        for (Land land : landList) {
+            PlantPojo plantPojo = landService.transFrom(land);
+            if (plantPojo.getStatus() != LandStatus.HARVEST.getValue() &&
+                    plantPojo.getStatus() != LandStatus.SHOVEL.getValue() &&
+                    plantPojo.getStatus() != LandStatus.PLANT.getValue()) {
+
+                //查询该土地今天被好友浇水的次数，如果少于两次，则允许被浇水
+                List<OpLog> landOplogs = opLogService.getTodayOpLogListByTypeAndLand(
+                        OpType.WATER_FRIEND.getValue(), plantPojo.getId());
+
+                if (landOplogs == null || landOplogs.size() < 2) {
+                    availableAmount++;
+                    availableLandList.add(land);
+                }
+            }
+        }
+
+        //未成熟的作物数量为0，即全部都成熟，则不能浇水
+        if (availableAmount == 0) {
+            map.put("success", false);
+            map.put("msg", "none");
+            return map;
+        }
+
+        /*
+        //查询今天帮助好友浇水的次数，每人每天帮好友浇水的次数有限
+        List<OpLog> allWaterOplogs = opLogService.getTodayOpLogListByType(
+                OpType.WATER_FRIEND.getValue(), user.getId());
+
+        if (allWaterOplogs != null && allWaterOplogs.size() == 3) {
+            map.put("success", false);
+            map.put("msg", "over");
+            return map;
+        }*/
+
+        //查询是否已帮该好友浇过水
+        List<OpLog> waterOplogs = opLogService.getTodayOpLogListByType(
+                OpType.WATER_FRIEND.getValue(), friend.getId(), user.getId());
+
+        if (waterOplogs != null && waterOplogs.size() > 0) {
+            map.put("success", false);
+            map.put("msg", "over");
+            return map;
+        }
+
+        //帮好友浇水
+        boolean result = userService.doWaterFriend(user, landList.get(RandomUtils.nextInt(landList.size())));
+
+        map.put("success", result);
+
+        return map;
+    }
+
+    /**
+     *检查是否可以偷取好友果实
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/checkSteal")
+    @ResponseBody
+    public Map<String, Object> checkSteal(HttpServletRequest request) {
+        Map<String, Object> map = new TreeMap<String, Object>();
+        map.put("available", true);
+
+        //当前用户
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //好友openid
+        String friendOpenId = request.getParameter("friendOpenId");
+        User friend = userService.getUserByOpenId(friendOpenId);
+
+        //检查是否可以偷取
+        List<Land> landList = landService.getLandsByUserId(friend.getId());
+        List<PlantPojo> plantList = landService.transFrom(landList);
+
+        //能被偷的作物数（成熟且当天被好友偷取次数少于三次）
+        int availableAmount = 0;
+
+        for (PlantPojo plantPojo : plantList) {
+            if (plantPojo.getStatus() == LandStatus.HARVEST.getValue()) {
+                //查询该土地今天被偷取的次数，如果被偷次数少于三次，则允许被偷
+                List<OpLog> landOplogs = opLogService.getTodayOpLogListByTypeAndLand(
+                        OpType.STEAL.getValue(), plantPojo.getId());
+                if (landOplogs == null || landOplogs.size() < 3) {
+                    availableAmount++;
+                }
+            }
+        }
+
+        //没有能被偷取的作物
+        if (availableAmount == 0) {
+            map.put("available", false);
+            map.put("msg", "none");
+            return map;
+        }
+
+        //查询今天偷取的总记录
+        List<OpLog> stealOplogs = opLogService.getTodayOpLogListByType(
+                OpType.STEAL.getValue(), user.getId());
+        //偷取的总次数不能大于3
+        if (stealOplogs != null && stealOplogs.size() == 3) {
+            map.put("msg", "over");
+            return map;
+        }
+
+        //查询是否已偷取过该好友
+        List<OpLog> stealFriendOplogs = opLogService.getTodayOpLogListByType(
+                OpType.STEAL.getValue(), friend.getId(), user.getId());
+        if (stealFriendOplogs != null && stealFriendOplogs.size() > 0) {
+            map.put("msg", "stolen");
+            return map;
+        }
+
+        return map;
+    }
+
+    /**
+     * 偷取好友果实
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/steal")
+    @ResponseBody
+    public Map<String, Object> steal(HttpServletRequest request) {
+        Map<String, Object> map = new TreeMap<String, Object>();
+
+        //当前用户
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        User user = userService.getUserByOpenId(openId);
+
+        //好友openid
+        String friendOpenId = request.getParameter("friendOpenId");
+//        friendOpenId = "oJAS9uBlCOOgFl9DEeohwaKtuGYc";
+        User friend = userService.getUserByOpenId(friendOpenId);
+
+        //检查是否可以偷取
+        List<Land> landList = landService.getLandsByUserId(friend.getId());
+
+        List<Land> availableLandList = new ArrayList<Land>();//能被偷的作物
+
+        //能被偷的作物数（成熟且当天被好友偷取次数少于三次）
+        int availableAmount = 0;
+
+        for (Land land : landList) {
+            PlantPojo plantPojo = landService.transFrom(land);
+            //未成熟也可以被偷（枯萎的不能被偷）
+            if (plantPojo.getStatus() != LandStatus.SHOVEL.getValue()) {
+                //查询该土地今天被偷取的次数，如果被偷次数少于三次，则允许被偷
+//                List<OpLog> landOplogs = opLogService.getTodayOpLogListByTypeAndLand(
+//                        OpType.STEAL.getValue(), plantPojo.getId());
+//                if (landOplogs == null || landOplogs.size() < 3) {
+                    availableAmount++;
+                    availableLandList.add(land);
+//                }
+            }
+        }
+
+        //没有能被偷取的作物
+        if (availableAmount == 0) {
+            map.put("success", false);
+            map.put("msg", "none");
+            return map;
+        }
+
+        //查询是否已偷取过该好友
+        List<OpLog> stealFriendOplogs = opLogService.getTodayOpLogListByType(
+                OpType.STEAL.getValue(), friend.getId(), user.getId());
+        if (stealFriendOplogs != null && stealFriendOplogs.size() > 0) {
+            map.put("success", false);
+            map.put("msg", "stolen");
+            return map;
+        }
+
+        //查询今天偷取的总记录
+        List<OpLog> stealOplogs = opLogService.getTodayOpLogListByType(
+                OpType.STEAL.getValue(), user.getId());
+        //偷取的总次数不能大于10
+        if (stealOplogs != null && stealOplogs.size() == 10) {
+            map.put("success", false);
+            map.put("msg", "over");
+            return map;
+        }
+
+        //偷取成功率为50%
+        int random = RandomUtils.nextInt(9);
+        if (random % 2 == 1) {
+
+            double result = userService.doSteal(user, availableLandList.get(
+                    RandomUtils.nextInt(availableLandList.size())));
+
+            if (result != 0) {
+                map.put("success", true);
+                map.put("flow", result);
+            } else {
+                map.put("success", false);
+                map.put("msg", "");
+            }
+        } else {
+            //偷取失败记录日志
+            userService.doStealFail(user, availableLandList.get(
+                    RandomUtils.nextInt(availableLandList.size())));
+            map.put("success", false);
+            map.put("msg", "fail");
+        }
+
+        return map;
+    }
+
+    /**
+     * 邀请好友浇水后
+     */
+    @RequestMapping(value = "/afterShareWater/{type}")
+    @ResponseBody
+    public void afterShareWater(@PathVariable int type) {
+        logger.info("邀请好友浇水分享成功！");
+
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            //查询今日是否已邀请过
+            List<OpLog> opLogList = opLogService.getTodayOpLogListByType(OpType.SHARE.getValue(), user.getId());
+
+            if (opLogList == null || opLogList.size() == 0) {
+                //插入操作记录，并增加流量
+                boolean result = userService.doWaterShare(user);
+                logger.info(result ? "第一次分享，获赠流量成功！" : "第一次分享，获赠流量失败！");
+            } else {
+                logger.info("已分享过，不再获赠流量！");
+
+                //只增加操作记录
+                String memo = (1 == type) ? "朋友圈" : "好友";
+
+                OpLog log = new OpLog();
+                log.setUserId(user.getId());
+                log.setOpUserId(user.getId());
+                log.setOpType(OpType.SHARE.getValue());
+                log.setMemo(memo);
+                log.setExperienceChange(0);
+                log.setOpTime(new Date());
+                log.setCreateTime(new Date());
+                log.setUpdateTime(new Date());
+
+                opLogService.addSelectiveOplog(log);
+
+            }
+
+        }
+    }
+
+    @RequestMapping(value = "/share/{type}")
+    @ResponseBody
+    public void share(@PathVariable int type) {
+        logger.info("邀请好友浇水分享成功！");
+
+        String openId = getWxOpenid();
+
+        //TODO:test
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+
+            //添加分享记录
+            String memo = (1 == type) ? "朋友圈" : "好友";
+
+            OpLog log = new OpLog();
+            log.setUserId(user.getId());
+            log.setOpUserId(user.getId());
+            log.setOpType(OpType.SHARE.getValue());
+            log.setMemo(memo);
+            log.setExperienceChange(0);
+            log.setOpTime(new Date());
+            log.setCreateTime(new Date());
+            log.setUpdateTime(new Date());
+
+            opLogService.addSelectiveOplog(log);
+
+        }
+    }
+
+    @RequestMapping(value = "/afterWaterInit")
+    @ResponseBody
+    public void afterWaterInit(ModelMap model) {
+        String openId = getWxOpenid();
+        configUserInfo(openId, model);
+    }
+
+    /**
+     * 微信JSSDK配置
+     * @param modelMap
+     */
+    private void configWx(String path,ModelMap modelMap)
+    {
+        //请求wx config
+        WxConfig wxConfig = getwxConfig(path);
+        modelMap.addAttribute("wxconfig",wxConfig);
+    }
+
+    private void configWx(String openid,String path,ModelMap modelMap)
+    {
+        //先隐掉
+        logger.info("openid:"+openid);
+        configWx(path, modelMap);
+        modelMap.addAttribute("openid", AESUtil.encryptWithString(openid));
+
+        modelMap.put("openId", openid);
+        configUserInfo(openid, modelMap);
+    }
+
+    private void configUserInfo(String openId, ModelMap modelMap){
+        //用户信息
+        User user = userService.getUserByOpenId(openId);
+
+        //用户作物信息（作物收获量和剩余收获时间）
+        List<Land> lands = landService.getLandsByUserId(user.getId());
+
+        if (lands != null && lands.size() > 0 && lands.get(0).getCropId() != null) {
+            PlantPojo plantPojo = landService.transFrom(lands.get(0));
+            //TODO:未成熟或未枯萎的
+            if (lands.get(0).getCropId() != null &&
+                    (plantPojo.getStatus()== LandStatus.NORMAL.getValue() || plantPojo.getStatus() == LandStatus
+                            .WATER.getValue())) {
+                modelMap.put("hasPlant", true);
+            } else {
+                modelMap.put("hasPlant", false);
+                return;
+            }
+
+//            modelMap.put("flow", plantPojo.getFlow());
+
+            //查询作物的剩余成熟时间
+            int matureHours = landService.getMatureHours(lands.get(0).getId());
+
+            if (matureHours > 24) {
+                if (matureHours % 24 == 0){
+//                    modelMap.put("matureDays", matureHours/24);
+                    modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                            "M流量，还有" + matureHours/24 + "天就成熟啦，快来帮我浇水吧！" );
+                } else {
+//                    modelMap.put("matureDays", matureHours/24 + 1);
+                    modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                            "M流量，还有" + (matureHours/24 + 1) + "天就成熟啦，快来帮我浇水吧！" );
+                }
+            } else {
+                modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                        "M流量，还有" + matureHours + "小时就成熟啦，快来帮我浇水吧！" );
+            }
+        } else {
+            modelMap.put("hasPlant", false);
+        }
+    }
+}

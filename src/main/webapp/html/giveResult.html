@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>流量农场</title>
+
+    <link rel="stylesheet" href="../assets/css/seeds.min.css"/>
+    <link rel="stylesheet" href="../assets/css/weui_toast.min.css"/>
+
+    <style>
+        .bg-img{  position: absolute;  top: 0;  left: 0; z-index: 0;}
+        body{ background-color: #b1e5e4;  font-family: "mini";}
+        .form{position: relative; min-height: 200px; line-height: 30px; background: url(../assets/imgs/form-bg.png); background-size: 100% 100%; margin: 0 auto; width: 90%; margin-top: 2rem; z-index: 10;
+        padding: 2rem; font-size: 1.4rem; color: #5a320b; padding-top: 4rem;}
+        .form-row{margin: 1.5rem 0; position: relative;}
+        .form-row label{font-weight: 400; }
+    </style>
+</head>
+<body>
+    <img class="bg-img" data-src="warehouse.png">
+
+    <div class="form">
+        <div class="form-row text-center">
+            恭喜你，你的好友<span style="font-family: 'Microsoft YaHei';">XXX</span><br>送给你XXXMB流量<br>
+            该链接已经失效<br>
+            流量已经被其他人抢走啦~<br>
+            不要太贪心，这是送给好友的哦
+        </div>
+    </div>
+
+    <div style=" position: relative;" class="mt-20 text-center">
+        <a href="./index.html">
+        <img src="../assets/imgs/btn-bg.png" class="btn-bg">
+        <div class="btn-text" id="confirm-btn">确 定</div>
+        </a>
+    </div>
+
+    <script>
+        var baseUrl = "../assets/imgs/";
+        var ctx = "http://mockapi.ngrok.cc/mock/seeds";
+    </script>
+
+    <script src="../assets/js/zepto.min.js"></script>
+    <script src="../assets/js/base.min.js"></script>
+</body>
+</html>

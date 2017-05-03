@@ -1,0 +1,701 @@
+package com.cmcc.seed.controller;
+
+import com.cmcc.seed.enems.LandStatus;
+import com.cmcc.seed.enems.UserLevelEnum;
+import com.cmcc.seed.model.Friends;
+import com.cmcc.seed.model.Land;
+import com.cmcc.seed.model.OpLogDetail;
+import com.cmcc.seed.model.User;
+import com.cmcc.seed.pojo.*;
+import com.cmcc.seed.service.FriendsService;
+import com.cmcc.seed.service.LandService;
+import com.cmcc.seed.service.OpLogService;
+import com.cmcc.seed.service.UserService;
+import com.cmcc.seed.utils.*;
+import com.google.gson.Gson;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.RandomUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+
+/**
+ * Created by cmcc on 16/1/14.
+ */
+@Controller
+@RequestMapping("/seed/farm")
+public class LoginController extends BaseController{
+
+    private Logger logger = Logger.getLogger(LoginController.class);
+
+    @Autowired
+    private Gson gson;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private OpLogService opLogService;
+
+    @Autowired
+    private FriendsService friendsService;
+
+    @Autowired
+    private LandService landService;
+
+    /**
+     * 游戏主页(流量农场页面)入口
+     * @return
+     */
+    @RequestMapping("index")
+    public String index(HttpServletRequest request, ModelMap model) {
+
+        String from = request.getParameter("from");
+        String giveCode = request.getParameter("giveCode");
+        String friendOpenId = request.getParameter("friendOpenId");
+
+        logger.info("进入index,from=" + from + ",giveCode=" + giveCode);
+
+        if (StringUtils.isNotBlank(from)) {
+            if (StringUtils.isNotBlank(giveCode)) {
+                logger.info("赠送链接点击进入，赠送码:" + giveCode);
+            } else if (StringUtils.isNotBlank(friendOpenId)) {
+                logger.info("邀请好友浇水链接点击进入，好友id:" + friendOpenId);
+            }
+        }
+
+        //获取session中的openid
+        String openId = getWxOpenid();
+
+        if (Constants.ISTEST) {
+            openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        }
+
+        logger.info("index,session = " + request.getSession().getId());
+        logger.info("index,sessionOpenID = " + openId);
+
+        //session不为空，则查询用户信息判断是否已绑定手机
+        if (StringUtils.isNotBlank(openId)) {
+
+            //调用10086接口判断是否绑定手机号
+            //TODO:判断是否关注10086
+            String isBindResult = mobibleBody();
+            logger.info("判断是否绑定手机号码返回结果：" + isBindResult);
+            IsBindResult result = gson.fromJson(isBindResult, IsBindResult.class);
+//            IsBindResult result = new IsBindResult();
+            //TODO:测试
+            if (Constants.ISTEST) {
+                result.setStatus("0");
+            }
+            //如果已绑定，则进入农场页面，否则返回绑定页面
+            if ("0".equals(result.getStatus())) {
+                if (StringUtils.isNotBlank(from) && "receive".equals(from)) {
+                    return "redirect:/seed/farm/receive?giveCode=" + giveCode;
+                } else if (StringUtils.isNotBlank(from) && "friend".equals(from)) {
+                    return "redirect:/seed/farm/friend?friendOpenId=" + friendOpenId;
+                }else {
+                    configWx(openId, indexPage, model);
+                    model.put("openId", openId);
+
+                    logger.info(openId + "进入农场主页！");
+                    return "index";
+                }
+            } else {
+                configWx(openId, bindPage, model);
+                return "bind";
+            }
+
+        //session中openid为空，则返回登陆页面
+        } else {
+            return "404";
+        }
+    }
+
+    /**
+     * 跳转到绑定页面
+     * @return
+     */
+    @RequestMapping("toBind")
+    public String bind(ModelMap model){
+        String openId = getWxOpenid();
+        configWx(openId, bindPage, model);
+        return "bind";
+    }
+
+    /**
+     * 发送验证码
+     * @return
+     */
+    @RequestMapping("code")
+    public Map code(HttpServletRequest request) {
+        String tel = request.getParameter("tel");
+        if (StringUtils.isNotBlank(tel)){
+            //调用10086接口发送验证码
+            String codeResult = getMessgeBody(tel);
+            CodeResult result = gson.fromJson(codeResult, CodeResult.class);
+
+            //发送成功
+            if ("0".equals(result.getStatus())) {
+                logger.info(tel + "获取验证码成功！");
+            }
+        }
+
+        return new TreeMap();
+    }
+
+    /**
+     * 获取手机号码归属地
+     * @return
+     */
+    @RequestMapping("telFrom")
+    @ResponseBody
+    public Map telFrom(HttpServletRequest request) {
+        Map<String ,String> map = new TreeMap<String, String>();
+
+        String tel = request.getParameter("tel");
+        //TODO:获取手机号码归属地
+        String telFrom = "浙江杭州";
+        map.put("telFrom",telFrom);
+
+        return map;
+    }
+
+    /**
+     * 绑定手机号码
+     * @return
+     */
+    @RequestMapping("bind")
+    @ResponseBody
+    public Map bindTel(HttpServletRequest request) {
+
+        Map<String ,Object> map = new TreeMap<String, Object>();
+
+        String tel = request.getParameter("tel");
+        String code = request.getParameter("code");
+
+        if (StringUtils.isNotBlank(tel) && StringUtils.isNotBlank(code)) {
+            //不需校验手机号是否已绑定其他微信号
+
+            //调用10086绑定手机号接口
+            String bindResult = toBindBody(tel,code);
+            logger.info("调用10086绑定手机号接口返回结果：" + bindResult);
+            BindResult result = gson.fromJson(bindResult,BindResult.class);
+
+            //绑定成功
+            if ("0".equals(result.getState())) {
+                logger.info("10086绑定手机接口绑定成功：tel = " + tel + ",code = " + code);
+
+                //用户可能通过10086自己的绑定页面来绑定，所以绑定成功后不应做任何操作
+                // 绑定成功，根据openid查询用户是否已存在
+                /*String openId = getWxOpenid();
+                if (StringUtils.isBlank(openId)) {
+                    User user = userService.getUserByOpenId(openId);
+                    //如果不存在，则新建用户
+                    if (user == null) {
+                        createNewUser(getWxOpenid());
+                    } else {
+                        //TODO:更新用户手机号
+                    }
+                }
+                */
+                map.put("success", true);
+                map.put("isUsed", false);
+            } else {
+                map.put("success", false);
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 游戏入口
+     * @param request
+     * @param code
+     * @return
+     */
+    @RequestMapping("login1")
+    public String login1(HttpServletRequest request, String code, String state) {
+
+        //TODO:test
+//        String testOpenId = request.getParameter("testOpenId");
+        String testOpenId = UUID.randomUUID().toString();
+
+        String from = request.getParameter("from");
+        String giveCode = request.getParameter("giveCode");
+        String friendOpenId = request.getParameter("friendOpenId");
+
+        if (StringUtils.isNotBlank(from)){
+            if (StringUtils.isNotBlank(giveCode)) {
+                logger.info("赠送链接点击进入，赠送码:" + giveCode);
+            } else if (StringUtils.isNotBlank(friendOpenId)) {
+                logger.info("邀请好友浇水链接点击进入，好友id:" + friendOpenId);
+            }
+        }
+
+        //请求参数中openid不为空，说明是通过分享链接进入
+        String fromOpenId = "";
+        logger.info("state=" + state + ",from=" + from + ",giveCode=" + giveCode);
+        if(StringUtils.isNotBlank(state)){
+            logger.info("分享链接点击进入，分享者openid:"+state);
+        }
+
+
+        //请求参数中code为空，说明未登录过或者微信授权过期
+        if (StringUtils.isBlank(code)) {
+            logger.info("未登陆或微信授权过期，跳转到授权页面！" + assemble10086authURL(state, from, giveCode, friendOpenId));
+            //TODO:test
+//            return "redirect:" + assemble10086authURL(state, from, giveCode, friendOpenId);
+        }
+
+        //解密
+        fromOpenId = AESUtil.decryptWithString(state);
+
+        //查询session中是否有openid
+        String sessionOpenId = getWxOpenid();
+//        sessionOpenId = "oJAS9uC6LLkFP3zAFw4Sgr0Zgaag";
+//        sessionOpenId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";fromOpenId=state;
+        logger.info("wxOpenId(login):"+sessionOpenId);
+
+        //session中openid不为空，跳转到农场页面
+        if(StringUtils.isNotBlank(sessionOpenId)){
+            //登录过的用户，直接获取用户信息及游戏次数
+            logger.info("Session exist,session open id:" + sessionOpenId + "， will go to index" );
+
+            //TODO:测试阶段需再次校验用户信息是或否存在
+            User user = userService.getUserByOpenId(sessionOpenId);
+            if (user != null) {
+                //好友关系
+                logger.info("fromOpenId=" + fromOpenId + ",sessionOpenId=" + sessionOpenId);
+                if (StringUtils.isNotBlank(fromOpenId) && !sessionOpenId.equals(fromOpenId)) {
+                    friendsService.createFriend(sessionOpenId, fromOpenId);
+                }
+                logger.info("获取用户信息：userId=" + user.getId() + ",openid=" + user.getOpenId());
+                return "redirect:/seed/farm/index?from=" + from + "&giveCode=" + giveCode + "&friendOpenId=" + friendOpenId;
+            }
+        }
+
+        //code不为空，但session为空，说明未登录过，进行code换token操作，并插入session和redis。
+        logger.info("code不为空但未登录，Get code from request,code is: " + code);
+
+        //调用10086接口用户信息(包括openid)
+//        String responseBody = getFansInfo(accountId, code);
+//        logger.info("调用10086接口用户信息，返回结果为：" + responseBody);
+//        FansInfo fansInfo = gson.fromJson(responseBody, FansInfo.class);
+//        logger.info(fansInfo);
+//
+        FansInfo fansInfo = new FansInfo();
+        fansInfo.setStatus("1000");
+        fansInfo.setOpenid(testOpenId);
+        fansInfo.setNickname("test");
+        fansInfo.setHeadimgurl("t");
+        fansInfo.setTelnum("13856562352");
+
+        // 得到openid,并做判断，如果没有在数据库中，就存入到数据库的user表中
+        if ("1000".equals(fansInfo.getStatus()) || "1001".equals(fansInfo.getStatus())) {
+            String openId = fansInfo.getOpenid();
+            if (StringUtils.isNotBlank(openId)) {
+                //根据openid查询数据库中是否存在用户。如不存在，则新建用户
+                //TODO:异步
+                createOrUpdateUser(fansInfo);
+                //好友关系
+                if (StringUtils.isNotBlank(fromOpenId) && !openId.equals(fromOpenId)) {
+                    friendsService.createFriend(openId, fromOpenId);
+                }
+
+                if(storeSessionAndRedis(openId)){
+                    logger.info("redis和session设置成功");
+                }
+                return "404";
+//                return "redirect:/seed/farm/index?from=" + from + "&giveCode=" + giveCode + "&friendOpenId=" + friendOpenId;
+            }else {
+                //如果openid为空，需要指向关注页面
+                return NEED_FOCUS_PAGE;
+            }
+        }else {
+            logger.error("非正常返回。");
+            return NEED_FOCUS_PAGE;
+        }
+
+
+    }
+
+    @RequestMapping("login")
+    public String login(HttpServletRequest request, String code, String state) {
+
+        String from = request.getParameter("from");
+        String giveCode = request.getParameter("giveCode");
+        String friendOpenId = request.getParameter("friendOpenId");
+
+        if (StringUtils.isNotBlank(from)){
+            if (StringUtils.isNotBlank(giveCode)) {
+                logger.info("赠送链接点击进入，赠送码:" + giveCode);
+            } else if (StringUtils.isNotBlank(friendOpenId)) {
+                logger.info("邀请好友浇水链接点击进入，好友id:" + friendOpenId);
+            }
+        }
+
+        //请求参数中openid不为空，说明是通过分享链接进入
+        String fromOpenId = "";
+        logger.info("state=" + state + ",from=" + from + ",giveCode=" + giveCode);
+        if(StringUtils.isNotBlank(state)){
+            logger.info("分享链接点击进入，分享者openid:"+state);
+        }
+
+
+        //请求参数中code为空，说明未登录过或者微信授权过期
+        if (StringUtils.isBlank(code) && !Constants.ISTEST) {
+            logger.info("未登陆或微信授权过期，跳转到授权页面！" + assemble10086authURL(state, from, giveCode, friendOpenId));
+            //TODO:test
+            return "redirect:" + assemble10086authURL(state, from, giveCode, friendOpenId);
+        }
+
+        //解密
+        fromOpenId = AESUtil.decryptWithString(state);
+
+        //查询session中是否有openid
+        String sessionOpenId = getWxOpenid();
+        logger.info("wxOpenId(login):"+sessionOpenId);
+
+        //session中openid不为空，跳转到农场页面
+        if(StringUtils.isNotBlank(sessionOpenId)){
+            //登录过的用户，直接获取用户信息
+            logger.info("Session exist,session open id:" + sessionOpenId + "， will go to index" );
+
+            //TODO:测试阶段需再次校验用户信息是或否存在
+            User user = userService.getUserByOpenId(sessionOpenId);
+            if (user != null) {
+                //好友关系
+                logger.info("fromOpenId=" + fromOpenId + ",sessionOpenId=" + sessionOpenId);
+                if (StringUtils.isNotBlank(fromOpenId) && !sessionOpenId.equals(fromOpenId)) {
+                    friendsService.createFriend(sessionOpenId, fromOpenId);
+                }
+                logger.info("获取用户信息：userId=" + user.getId() + ",openid=" + user.getOpenId());
+                return "redirect:/seed/farm/index?from=" + from + "&giveCode=" + giveCode + "&friendOpenId=" + friendOpenId;
+            }
+        }
+
+        //code不为空，但session为空，说明未登录过，进行code换token操作，并插入session和redis。
+        logger.info("code不为空但未登录，Get code from request,code is: " + code);
+
+        //调用10086接口用户信息(包括openid)
+        String responseBody = getFansInfo(accountId, code);
+        logger.info("调用10086接口用户信息，返回结果为：" + responseBody);
+        FansInfo fansInfo = gson.fromJson(responseBody, FansInfo.class);
+        logger.info(fansInfo);
+
+        if (Constants.ISTEST) {
+            fansInfo.setStatus("1000");
+            fansInfo.setOpenid("oJAS9uKBCRdqkVemGRQPahHp8-ew");
+        }
+
+        // 得到openid,并做判断，如果没有在数据库中，就存入到数据库的user表中
+        if ("1000".equals(fansInfo.getStatus()) || "1001".equals(fansInfo.getStatus())) {
+            String openId = fansInfo.getOpenid();
+            if (StringUtils.isNotBlank(openId)) {
+                //根据openid查询数据库中是否存在用户。如不存在，则新建用户
+                //TODO:异步
+                createOrUpdateUser(fansInfo);
+                //好友关系
+                if (StringUtils.isNotBlank(fromOpenId) && !openId.equals(fromOpenId)) {
+                    friendsService.createFriend(openId, fromOpenId);
+                }
+
+                if(storeSessionAndRedis(openId)){
+                    logger.info("redis和session设置成功");
+                }
+                return "redirect:/seed/farm/index?from=" + from + "&giveCode=" + giveCode + "&friendOpenId=" + friendOpenId;
+            }else {
+                //如果openid为空，需要指向关注页面
+                return NEED_FOCUS_PAGE;
+            }
+        }else {
+            logger.error("非正常返回。");
+            return NEED_FOCUS_PAGE;
+        }
+
+    }
+
+    @RequestMapping("help")
+    public String help(ModelMap model) {
+        String openId = getWxOpenid();
+        configWx(openId, helpPage, model);
+        return "help";
+    }
+
+    @RequestMapping("warehouse")
+    public String warehouse(ModelMap model) {
+        //取出session中的用户openid
+        String openId = getWxOpenid();
+        //TODO:test
+//        openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        //如果openid不存在或失效，则跳转至login
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            if (user != null) {
+                //model.put("flow", user.getFlow());
+                configWx(openId, warehousePage, model);
+                return "warehouse";
+            }
+        }
+
+        return "redirect:/seed/farm/login";
+    }
+
+    @RequestMapping("toExchange")
+    public String exchange(ModelMap model) {
+        String openId = getWxOpenid();
+        configWx(openId, exchangePage, model);
+        return "exchange";
+    }
+
+    @RequestMapping("toGive")
+    public String toGive(ModelMap model) {
+        String openId = getWxOpenid();
+        configWx(openId, givePage, model);
+
+        //赠送码
+        String code = UUID.randomUUID().toString();
+        model.put("giveCode", code);
+
+        return "give";
+    }
+
+    @RequestMapping("toFlowDetail")
+    public String detail(ModelMap model) {
+        String openId = getWxOpenid();
+        //TODO:test
+//        openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        //查询用户的流量收支明细
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            if (user != null) {
+                List<FlowChangeDetail> outFlowList = opLogService.getOutFlowList(user.getId());
+                List<FlowChangeDetail> inFlowList = opLogService.getIncomeFlowList(user.getId());
+
+                model.put("outFlowList", outFlowList);
+                model.put("inFlowList", inFlowList);
+            }
+        }
+        configWx(openId, flowDetailPage, model);
+        return "flowDetail";
+    }
+
+    @RequestMapping("friends")
+    public String friends(ModelMap model) {
+        String openId = getWxOpenid();
+        //TODO:test
+//        openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+        if (StringUtils.isNotBlank(openId)) {
+            User user = userService.getUserByOpenId(openId);
+            if (user != null) {
+                //好友
+                List<Friends> friends = friendsService.getFriends(openId);
+                model.put("friends", friends);
+
+                //与我有关
+                List<MyOplog> myOplogs = opLogService.getMyOplog(user.getId());
+                model.put("myOplogs", myOplogs);
+            }
+        }
+        configWx(openId, friendsPage, model);
+        return "friends";
+    }
+
+    @RequestMapping("friend")
+    public String friend(HttpServletRequest request, ModelMap model) {
+        //当前用户
+        String openId = getWxOpenid();
+//        openId = "oJAS9uKBCRdqkVemGRQPahHp8-ew";
+
+        //好友id
+        String friendOpenId = request.getParameter("friendOpenId");
+//        friendOpenId = "oJAS9uIbfjXmxBgbbqBAaI7pRB5s";
+        //如果当前session中用户openid不为空，则直接进入好友页面;否则跳转到游戏入口
+        if (StringUtils.isNotBlank(openId)) {
+
+            if (StringUtils.isNotBlank(friendOpenId) && friendOpenId.equals(openId)) {
+                configWx(openId, indexPage, model);
+                return "redirect:/seed/farm/index";
+            } else {
+                //创建好友关系
+                friendsService.createFriend(openId, friendOpenId);
+
+                configWx(openId, friendPage, model);
+                model.put("friendOpenId", friendOpenId);
+                return "friend";
+            }
+        } else {
+            return "redirect:/seed/farm/login?from=friend&friendOpenId=" + friendOpenId;
+        }
+    }
+
+    @RequestMapping("/error")
+    public String error(ModelMap model) {
+        String openId = getWxOpenid();
+        configWx(openId, errorPage, model);
+        return "404";
+    }
+
+    // 调用微信获取昵称的接口
+    private WebnickTokenPojo getNicktoken(String access_token, String openid,
+                                          String lang) {
+        WebnickTokenPojo webnickTokenPojo = null;
+        String responseBody = HttpUtil.doGet(webTokenGetUserInfoUrl, "access_token="
+                + access_token + "&openid=" + openid + "&lang=" + lang, "utf-8", true);
+        webnickTokenPojo = gson.fromJson(responseBody,
+                WebnickTokenPojo.class);
+        return webnickTokenPojo;
+    }
+
+
+    private String assemble10086authURL(String state, String from, String giveCode, String friendOpenId) {
+        if(!"".equals(state))
+        {
+            return "https://open.weixin.qq.com/connect/oauth2/authorize?appid="+appid10086+"&redirect_uri=http%3A%2F" +
+                    "%2Fwx.10086.cn%2Flottery%2Fseed%2Ffarm%2Flogin%3Ffrom%3D" + from + "%26giveCode%3D" + giveCode +
+                    "%26friendOpenId%3D" + friendOpenId +
+                    "&&response_type=code&scope=snsapi_base&state=" +state+ "#wechat_redirect";
+        }else{
+            return "https://open.weixin.qq.com/connect/oauth2/authorize?appid="+appid10086+"&redirect_uri=http%3A%2F" +
+                    "%2Fwx.10086.cn%2Flottery%2Fseed%2Ffarm%2Flogin" +
+                    "&&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect";
+        }
+
+    }
+
+    /**
+     * 创建新用户
+     * @param openId
+     * @return
+     */
+    private boolean createNewUser(String openId) {
+        User user = new User();
+
+        String nickName = "nick" + new Random().nextInt(10);
+        String mobile = "1385656969" + new Random().nextInt(9);
+        String photo = "http://pic46.nipic.com/20140817/2910856_154846306040_2.jpg";
+
+        user.setOpenId(openId);
+        user.setNickname(nickName);
+        user.setImgUrl(photo);
+        user.setMobile(mobile);
+        user.setLevel(UserLevelEnum.NEW.getValue());
+        user.setExperience(0);
+        user.setMoney(0);
+        user.setFlow(0);
+        user.setCreateTime(new Date());
+        user.setUpdateTime(new Date());
+
+        return userService.insert(user) == 1;
+    }
+
+    private void createOrUpdateUser(FansInfo fansInfo) {
+        String openId = fansInfo.getOpenid();
+
+        User user = userService.getUserByOpenId(openId);
+        //TODO:微信用户昵称中的emoji暂时先过滤掉
+        String nickName = NickNameEmojiFilter.filterEmoji(fansInfo.getNickname());
+        if (StringUtils.isBlank(nickName)) {
+            nickName = "-";
+        }
+        //如果openid对应的user不存在，则新建；否则更新
+        if (user == null) {
+            user = new User();
+
+            user.setOpenId(openId);
+            user.setNickname(nickName);
+            user.setImgUrl(fansInfo.getHeadimgurl());
+            user.setMobile(fansInfo.getTelnum());
+            user.setLevel(UserLevelEnum.NEW.getValue());
+            user.setExperience(0);
+            user.setMoney(0);
+            user.setFlow(0);
+            user.setCreateTime(new Date());
+            user.setUpdateTime(new Date());
+
+            userService.insert(user);
+        } else {
+            //TODO:不应每次都更新
+            user.setNickname(nickName);
+            user.setImgUrl(fansInfo.getHeadimgurl());
+            user.setMobile(fansInfo.getTelnum());
+            user.setUpdateTime(new Date());
+
+            userService.updateUser(user);
+
+            //TODO:更新好友关系表中的数据
+        }
+    }
+
+
+    /**
+     * 微信JSSDK配置
+     * @param modelMap
+     */
+    private void configWx(String path,ModelMap modelMap)
+    {
+        //请求wx config
+        WxConfig wxConfig = getwxConfig(path);
+        modelMap.addAttribute("wxconfig",wxConfig);
+    }
+
+    private void configWx(String openid,String path,ModelMap modelMap)
+    {
+        //先隐掉
+        logger.info("openid:"+openid);
+        configWx(path, modelMap);
+        modelMap.addAttribute("openid", AESUtil.encryptWithString(openid));
+
+        modelMap.put("openId", openid);
+        configUserInfo(openid, modelMap);
+    }
+
+    private void configUserInfo(String openId, ModelMap modelMap){
+        //用户信息
+        User user = userService.getUserByOpenId(openId);
+
+        //用户作物信息（作物收获量和剩余收获时间）
+        List<Land> lands = landService.getLandsByUserId(user.getId());
+
+        if (lands != null && lands.size() > 0 && lands.get(0).getCropId() != null) {
+            PlantPojo plantPojo = landService.transFrom(lands.get(0));
+            //TODO:未成熟或未枯萎的
+            if (lands.get(0).getCropId() != null &&
+                    (plantPojo.getStatus()== LandStatus.NORMAL.getValue() || plantPojo.getStatus() == LandStatus
+                            .WATER.getValue())) {
+                modelMap.put("hasPlant", true);
+            } else {
+                modelMap.put("hasPlant", false);
+                return;
+            }
+
+//            modelMap.put("flow", plantPojo.getFlow());
+
+            //查询作物的剩余成熟时间
+            int matureHours = landService.getMatureHours(lands.get(0).getId());
+
+            if (matureHours > 24) {
+                if (matureHours % 24 == 0){
+//                    modelMap.put("matureDays", matureHours/24);
+                    modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                            "M流量，还有" + matureHours/24 + "天就成熟啦，快来帮我浇水吧！" );
+                } else {
+//                    modelMap.put("matureDays", matureHours/24 + 1);
+                    modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                            "M流量，还有" + (matureHours/24 + 1) + "天就成熟啦，快来帮我浇水吧！" );
+                }
+            } else {
+                modelMap.put("title", user.getNickname() + "正在种植" + plantPojo.getFlow() +
+                                "M流量，还有" + matureHours + "小时就成熟啦，快来帮我浇水吧！" );
+            }
+        } else {
+            modelMap.put("hasPlant", false);
+        }
+    }
+}

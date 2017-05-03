@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cmcc.seed.dao.LandMapper">
+  <resultMap id="BaseResultMap" type="com.cmcc.seed.model.Land">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="crop_id" jdbcType="BIGINT" property="cropId" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="plant_time" jdbcType="TIMESTAMP" property="plantTime" />
+    <result column="expect_yield" jdbcType="DOUBLE" property="expectYield" />
+    <result column="yield" jdbcType="DOUBLE" property="yield" />
+    <result column="last_water_time" jdbcType="TIMESTAMP" property="lastWaterTime" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, user_id, num, crop_id, status, plant_time, expect_yield, yield, last_water_time, create_time,
+    update_time
+  </sql>
+
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from land
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from land
+    where user_id = #{userId,jdbcType=BIGINT}
+  </select>
+
+  <select id="selectByUserIdAndCropId" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from land
+    where user_id = #{userId,jdbcType=BIGINT}
+    <if test="cropId != null">
+      and crop_id = #{1,jdbcType=BIGINT}
+    </if>
+    <if test="cropId == null">
+      and crop_id = NULL
+    </if>
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from land
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <insert id="insert" parameterType="com.cmcc.seed.model.Land" useGeneratedKeys="true" keyProperty="id" >
+    insert into land (id, user_id, num, 
+      crop_id, status, plant_time, 
+      expect_yield, yield, last_water_time, create_time,
+      update_time)
+    values (#{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{num,jdbcType=INTEGER},
+      #{cropId,jdbcType=BIGINT}, #{status,jdbcType=INTEGER}, #{plantTime,jdbcType=TIMESTAMP},
+      #{expectYield,jdbcType=DOUBLE}, #{yield,jdbcType=DOUBLE}, #{lastWaterTime,jdbcType=TIMESTAMP},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+
+  <insert id="insertSelective" parameterType="com.cmcc.seed.model.Land">
+    insert into land
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="userId != null">
+        user_id,
+      </if>
+      <if test="num != null">
+        num,
+      </if>
+      <if test="cropId != null">
+        crop_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="plantTime != null">
+        plant_time,
+      </if>
+      <if test="expectYield != null">
+        expect_yield,
+      </if>
+      <if test="yield != null">
+        yield,
+      </if>
+      <if test="lastWaterTime != null">
+        last_water_time,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="num != null">
+        #{num,jdbcType=INTEGER},
+      </if>
+      <if test="cropId != null">
+        #{cropId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="plantTime != null">
+        #{plantTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expectYield != null">
+        #{expectYield,jdbcType=DOUBLE},
+      </if>
+      <if test="yield != null">
+        #{yield,jdbcType=DOUBLE},
+      </if>
+      <if test="lastWaterTime != null">
+        #{lastWaterTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.cmcc.seed.model.Land">
+    update land
+    <set>
+      <if test="userId != null">
+        user_id = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="num != null">
+        num = #{num,jdbcType=INTEGER},
+      </if>
+      <if test="cropId != null">
+        crop_id = #{cropId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="plantTime != null">
+        plant_time = #{plantTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expectYield != null">
+        expect_yield = #{expectYield,jdbcType=DOUBLE},
+      </if>
+      <if test="yield != null">
+        yield = #{yield,jdbcType=DOUBLE},
+      </if>
+      <if test="lastWaterTime != null">
+        last_water_time = #{lastWaterTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateByPrimaryKey" parameterType="com.cmcc.seed.model.Land">
+    update land
+    set user_id = #{userId,jdbcType=BIGINT},
+      num = #{num,jdbcType=INTEGER},
+      crop_id = #{cropId,jdbcType=BIGINT},
+      status = #{status,jdbcType=INTEGER},
+      plant_time = #{plantTime,jdbcType=TIMESTAMP},
+      expect_yield = #{expectYield,jdbcType=DOUBLE},
+      yield = #{yield,jdbcType=DOUBLE},
+      last_water_time = #{lastWaterTime,jdbcType=TIMESTAMP},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+  <update id="addYieldById">
+    update land
+    set yield = yield + #{1,jdbcType=DOUBLE}
+    where id = #{0,jdbcType=BIGINT}
+  </update>
+
+  <update id="updateAllStatus">
+    update land
+    set status = #{0,jdbcType=INTEGER} , update_time = now()
+  </update>
+</mapper>
